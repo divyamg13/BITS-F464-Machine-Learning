@@ -1,0 +1,8 @@
+.venv311/
+__pycache__/
+*.pyc
+*.csv
+*.gpickle
+*.gpickle
+
+*.gpickle
