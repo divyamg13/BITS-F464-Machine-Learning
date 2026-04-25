@@ -1,8 +1,11 @@
 .venv311/
 __pycache__/
 *.pyc
+.DS_Store
 
 *.gpickle
-*.gpickle
 
-*.gpickle
+.claude/
+.code-review-graph/
+docs/
+datasets/
