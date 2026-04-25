@@ -287,7 +287,12 @@ def fit_and_evaluate_model(
     threshold_objective: str = "f1",
 ) -> dict:
     model = build_model(model_name, dataset["scale_pos_weight"], random_state=random_state)
-    model.fit(dataset["X_train"], dataset["y_train"])
+    y_train = (
+        dataset["y_train"].to_numpy(copy=True)
+        if hasattr(dataset["y_train"], "to_numpy")
+        else np.asarray(dataset["y_train"])
+    )
+    model.fit(dataset["X_train"], y_train)
 
     val_prob = model.predict_proba(dataset["X_val"])[:, 1]
     threshold = find_best_threshold(dataset["y_val"].to_numpy(), val_prob, objective=threshold_objective)
