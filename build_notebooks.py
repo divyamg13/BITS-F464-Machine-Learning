@@ -219,7 +219,7 @@ nb2_cells = [
 
         Recommended default:
 
-        - feature block: `eth_twitter_combined_features_*`
+        - feature block: `features_*`
         - target: `label`
         - main metric: `PR-AUC`
         """
@@ -256,7 +256,7 @@ nb2_cells = [
     ),
     code(
         """
-        FEATURE_GROUP = "eth_twitter_combined_features"
+        FEATURE_GROUP = "features"
         RANDOM_STATE = 42
 
         feature_groups = {
@@ -497,7 +497,7 @@ nb3_cells = [
         """
         fused_df = nodes_df.merge(graph_features, on="node_id", how="left")
 
-        base_features = [c for c in fused_df.columns if c.startswith("eth_twitter_combined_features_")]
+        base_features = [c for c in fused_df.columns if c.startswith("features_")]
         graph_stats = [
             "full_in_degree",
             "full_out_degree",
@@ -652,7 +652,7 @@ nb4_cells = [
         Recommended first run on CPU:
 
         - `MODEL_NAME = "graphsage"`
-        - `FEATURE_GROUP = "eth_twitter_combined_features"`
+        - `FEATURE_GROUP = "features"`
         - `EPOCHS = 80`
         """
     ),
@@ -689,7 +689,7 @@ nb4_cells = [
     code(
         """
         MODEL_NAME = "graphsage"  # one of: graphsage, gat, ggnn
-        FEATURE_GROUP = "eth_twitter_combined_features"
+        FEATURE_GROUP = "features"
         ADD_GRAPH_STATS = True
         RANDOM_STATE = 42
         HIDDEN_DIM = 64

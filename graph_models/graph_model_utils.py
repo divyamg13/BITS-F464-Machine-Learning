@@ -84,7 +84,7 @@ def load_frames(nodes_path: Path | None = None, edges_path: Path | None = None) 
 
 
 def build_graph_dataset(
-    feature_group: str = "eth_twitter_combined_features",
+    feature_group: str = "features",
     add_graph_stats: bool = True,
     random_state: int = 42,
     device: str | torch.device | None = None,
@@ -424,31 +424,39 @@ def predict_probabilities(model: nn.Module, data: dict, mask_name: str) -> tuple
 
 
 def plot_training_history(history_df: pd.DataFrame) -> None:
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
-    axes = axes.ravel()
+    plt.figure(figsize=(7, 4))
+    plt.plot(history_df["epoch"], history_df["train_loss"], label="train_loss")
+    plt.plot(history_df["epoch"], history_df["val_loss"], label="val_loss")
+    plt.title("Loss")
+    plt.xlabel("Epoch")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
-    axes[0].plot(history_df["epoch"], history_df["train_loss"], label="train_loss")
-    axes[0].plot(history_df["epoch"], history_df["val_loss"], label="val_loss")
-    axes[0].set_title("Loss")
-    axes[0].legend()
+    plt.figure(figsize=(7, 4))
+    plt.plot(history_df["epoch"], history_df["val_PR-AUC"], label="val PR-AUC")
+    plt.plot(history_df["epoch"], history_df["val_ROC-AUC"], label="val ROC-AUC")
+    plt.title("Ranking Metrics")
+    plt.xlabel("Epoch")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
-    axes[1].plot(history_df["epoch"], history_df["val_PR-AUC"], label="val PR-AUC")
-    axes[1].plot(history_df["epoch"], history_df["val_ROC-AUC"], label="val ROC-AUC")
-    axes[1].set_title("Ranking Metrics")
-    axes[1].legend()
+    plt.figure(figsize=(7, 4))
+    plt.plot(history_df["epoch"], history_df["val_F1"], label="val F1")
+    plt.plot(history_df["epoch"], history_df["val_Precision"], label="val Precision")
+    plt.plot(history_df["epoch"], history_df["val_Recall"], label="val Recall")
+    plt.title("Thresholded Metrics")
+    plt.xlabel("Epoch")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
-    axes[2].plot(history_df["epoch"], history_df["val_F1"], label="val F1")
-    axes[2].plot(history_df["epoch"], history_df["val_Precision"], label="val Precision")
-    axes[2].plot(history_df["epoch"], history_df["val_Recall"], label="val Recall")
-    axes[2].set_title("Thresholded Metrics")
-    axes[2].legend()
-
-    axes[3].plot(history_df["epoch"], history_df["val_threshold"], label="best val threshold")
-    axes[3].set_title("Threshold Sweep Result")
-    axes[3].legend()
-
-    for ax in axes:
-        ax.set_xlabel("Epoch")
+    plt.figure(figsize=(7, 4))
+    plt.plot(history_df["epoch"], history_df["val_threshold"], label="best val threshold")
+    plt.title("Threshold Sweep Result")
+    plt.xlabel("Epoch")
+    plt.legend()
     plt.tight_layout()
     plt.show()
 
@@ -477,79 +485,81 @@ def plot_evaluation_dashboard(y_true: np.ndarray, y_prob: np.ndarray, threshold:
         )
     threshold_df = pd.DataFrame(threshold_rows)
 
-    fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-    axes = axes.ravel()
+    plt.figure(figsize=(6, 5))
+    plt.plot(fpr, tpr, label=f"ROC-AUC = {roc_auc_score(y_true, y_prob):.4f}")
+    plt.plot([0, 1], [0, 1], linestyle="--", color="gray")
+    plt.title(f"{title_prefix} ROC Curve".strip())
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
-    axes[0].plot(fpr, tpr, label=f"ROC-AUC = {roc_auc_score(y_true, y_prob):.4f}")
-    axes[0].plot([0, 1], [0, 1], linestyle="--", color="gray")
-    axes[0].set_title(f"{title_prefix} ROC Curve".strip())
-    axes[0].set_xlabel("False Positive Rate")
-    axes[0].set_ylabel("True Positive Rate")
-    axes[0].legend()
+    plt.figure(figsize=(6, 5))
+    plt.plot(recall, precision, label=f"PR-AUC = {average_precision_score(y_true, y_prob):.4f}")
+    plt.title(f"{title_prefix} Precision-Recall Curve".strip())
+    plt.xlabel("Recall")
+    plt.ylabel("Precision")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
-    axes[1].plot(recall, precision, label=f"PR-AUC = {average_precision_score(y_true, y_prob):.4f}")
-    axes[1].set_title(f"{title_prefix} Precision-Recall Curve".strip())
-    axes[1].set_xlabel("Recall")
-    axes[1].set_ylabel("Precision")
-    axes[1].legend()
-
+    plt.figure(figsize=(6, 5))
     sns.heatmap(
         np.array([[tn, fp], [fn, tp]]),
         annot=True,
         fmt="d",
         cmap="Blues",
         cbar=False,
-        ax=axes[2],
         xticklabels=["Pred 0", "Pred 1"],
         yticklabels=["True 0", "True 1"],
     )
-    axes[2].set_title(f"{title_prefix} Confusion Matrix @ {threshold:.2f}".strip())
+    plt.title(f"{title_prefix} Confusion Matrix @ {threshold:.2f}".strip())
+    plt.tight_layout()
+    plt.show()
 
-    axes[3].hist(y_prob[y_true == 0], bins=30, alpha=0.65, label="label=0")
-    axes[3].hist(y_prob[y_true == 1], bins=30, alpha=0.65, label="label=1")
-    axes[3].axvline(threshold, color="red", linestyle="--", label="threshold")
-    axes[3].set_title(f"{title_prefix} Score Distribution".strip())
-    axes[3].set_xlabel("Predicted probability")
-    axes[3].legend()
+    plt.figure(figsize=(6, 5))
+    plt.hist(y_prob[y_true == 0], bins=30, alpha=0.65, label="label=0")
+    plt.hist(y_prob[y_true == 1], bins=30, alpha=0.65, label="label=1")
+    plt.axvline(threshold, color="red", linestyle="--", label="threshold")
+    plt.title(f"{title_prefix} Score Distribution".strip())
+    plt.xlabel("Predicted probability")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
-    axes[4].plot(threshold_df["threshold"], threshold_df["precision"], label="Precision")
-    axes[4].plot(threshold_df["threshold"], threshold_df["recall"], label="Recall")
-    axes[4].plot(threshold_df["threshold"], threshold_df["f1"], label="F1")
-    axes[4].plot(threshold_df["threshold"], threshold_df["specificity"], label="Specificity")
-    axes[4].axvline(threshold, color="red", linestyle="--", label="chosen threshold")
-    axes[4].set_title(f"{title_prefix} Metrics vs Threshold".strip())
-    axes[4].set_xlabel("Threshold")
-    axes[4].legend()
+    plt.figure(figsize=(7, 5))
+    plt.plot(threshold_df["threshold"], threshold_df["precision"], label="Precision")
+    plt.plot(threshold_df["threshold"], threshold_df["recall"], label="Recall")
+    plt.plot(threshold_df["threshold"], threshold_df["f1"], label="F1")
+    plt.plot(threshold_df["threshold"], threshold_df["specificity"], label="Specificity")
+    plt.axvline(threshold, color="red", linestyle="--", label="chosen threshold")
+    plt.title(f"{title_prefix} Metrics vs Threshold".strip())
+    plt.xlabel("Threshold")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
-    axes[5].plot(prob_pred, prob_true, marker="o", label="model")
-    axes[5].plot([0, 1], [0, 1], linestyle="--", color="gray", label="perfect")
-    axes[5].set_title(f"{title_prefix} Calibration Curve".strip())
-    axes[5].set_xlabel("Mean predicted probability")
-    axes[5].set_ylabel("Observed positive rate")
-    axes[5].legend()
-
+    plt.figure(figsize=(6, 5))
+    plt.plot(prob_pred, prob_true, marker="o", label="model")
+    plt.plot([0, 1], [0, 1], linestyle="--", color="gray", label="perfect")
+    plt.title(f"{title_prefix} Calibration Curve".strip())
+    plt.xlabel("Mean predicted probability")
+    plt.ylabel("Observed positive rate")
+    plt.legend()
     plt.tight_layout()
     plt.show()
 
 
 def plot_comparison_bars(results_df: pd.DataFrame, metrics: list[str] | None = None) -> None:
     metrics = metrics or ["PR-AUC", "Recall", "Precision", "F1", "Balanced-Accuracy", "MCC"]
-    num_metrics = len(metrics)
-    ncols = 2
-    nrows = int(np.ceil(num_metrics / ncols))
-    fig, axes = plt.subplots(nrows, ncols, figsize=(14, 4 * nrows))
-    axes = np.array(axes).reshape(-1)
-
-    for ax, metric in zip(axes, metrics):
-        sns.barplot(data=results_df, x="model", y=metric, ax=ax)
+    for metric in metrics:
+        plt.figure(figsize=(7, 4))
+        ax = sns.barplot(data=results_df, x="model", y=metric)
         ax.set_title(metric)
         ax.tick_params(axis="x", rotation=20)
-
-    for ax in axes[num_metrics:]:
-        ax.axis("off")
-
-    plt.tight_layout()
-    plt.show()
+        plt.tight_layout()
+        plt.show()
 
 
 def plot_component_distribution(edges_df: pd.DataFrame) -> None:

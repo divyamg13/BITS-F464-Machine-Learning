@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import math
 import random
 from pathlib import Path
 from typing import Dict
@@ -10,7 +9,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from sklearn.calibration import calibration_curve
-from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
@@ -80,7 +78,7 @@ def get_feature_groups(nodes_df: pd.DataFrame) -> Dict[str, list[str]]:
 
 
 def build_tabular_dataset(
-    feature_group: str = "eth_twitter_combined_features",
+    feature_group: str = "features",
     add_graph_stats: bool = False,
     random_state: int = 42,
 ) -> dict:
@@ -333,57 +331,68 @@ def plot_evaluation_dashboard(y_true: np.ndarray, y_prob: np.ndarray, threshold:
         )
     threshold_df = pd.DataFrame(threshold_rows)
 
-    fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-    axes = axes.ravel()
+    plt.figure(figsize=(6, 5))
+    plt.plot(fpr, tpr, label=f"ROC-AUC = {roc_auc_score(y_true, y_prob):.4f}")
+    plt.plot([0, 1], [0, 1], linestyle="--", color="gray")
+    plt.title(f"{title_prefix} ROC Curve".strip())
+    plt.xlabel("False Positive Rate")
+    plt.ylabel("True Positive Rate")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
-    axes[0].plot(fpr, tpr, label=f"ROC-AUC = {roc_auc_score(y_true, y_prob):.4f}")
-    axes[0].plot([0, 1], [0, 1], linestyle="--", color="gray")
-    axes[0].set_title(f"{title_prefix} ROC Curve".strip())
-    axes[0].set_xlabel("False Positive Rate")
-    axes[0].set_ylabel("True Positive Rate")
-    axes[0].legend()
+    plt.figure(figsize=(6, 5))
+    plt.plot(recall, precision, label=f"PR-AUC = {average_precision_score(y_true, y_prob):.4f}")
+    plt.title(f"{title_prefix} Precision-Recall Curve".strip())
+    plt.xlabel("Recall")
+    plt.ylabel("Precision")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
-    axes[1].plot(recall, precision, label=f"PR-AUC = {average_precision_score(y_true, y_prob):.4f}")
-    axes[1].set_title(f"{title_prefix} Precision-Recall Curve".strip())
-    axes[1].set_xlabel("Recall")
-    axes[1].set_ylabel("Precision")
-    axes[1].legend()
-
+    plt.figure(figsize=(6, 5))
     sns.heatmap(
         np.array([[tn, fp], [fn, tp]]),
         annot=True,
         fmt="d",
         cmap="Blues",
         cbar=False,
-        ax=axes[2],
         xticklabels=["Pred 0", "Pred 1"],
         yticklabels=["True 0", "True 1"],
     )
-    axes[2].set_title(f"{title_prefix} Confusion Matrix @ {threshold:.2f}".strip())
+    plt.title(f"{title_prefix} Confusion Matrix @ {threshold:.2f}".strip())
+    plt.tight_layout()
+    plt.show()
 
-    axes[3].hist(y_prob[y_true == 0], bins=30, alpha=0.65, label="label=0")
-    axes[3].hist(y_prob[y_true == 1], bins=30, alpha=0.65, label="label=1")
-    axes[3].axvline(threshold, color="red", linestyle="--", label="threshold")
-    axes[3].set_title(f"{title_prefix} Score Distribution".strip())
-    axes[3].set_xlabel("Predicted probability")
-    axes[3].legend()
+    plt.figure(figsize=(6, 5))
+    plt.hist(y_prob[y_true == 0], bins=30, alpha=0.65, label="label=0")
+    plt.hist(y_prob[y_true == 1], bins=30, alpha=0.65, label="label=1")
+    plt.axvline(threshold, color="red", linestyle="--", label="threshold")
+    plt.title(f"{title_prefix} Score Distribution".strip())
+    plt.xlabel("Predicted probability")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
-    axes[4].plot(threshold_df["threshold"], threshold_df["precision"], label="Precision")
-    axes[4].plot(threshold_df["threshold"], threshold_df["recall"], label="Recall")
-    axes[4].plot(threshold_df["threshold"], threshold_df["f1"], label="F1")
-    axes[4].plot(threshold_df["threshold"], threshold_df["specificity"], label="Specificity")
-    axes[4].axvline(threshold, color="red", linestyle="--", label="chosen threshold")
-    axes[4].set_title(f"{title_prefix} Metrics vs Threshold".strip())
-    axes[4].set_xlabel("Threshold")
-    axes[4].legend()
+    plt.figure(figsize=(7, 5))
+    plt.plot(threshold_df["threshold"], threshold_df["precision"], label="Precision")
+    plt.plot(threshold_df["threshold"], threshold_df["recall"], label="Recall")
+    plt.plot(threshold_df["threshold"], threshold_df["f1"], label="F1")
+    plt.plot(threshold_df["threshold"], threshold_df["specificity"], label="Specificity")
+    plt.axvline(threshold, color="red", linestyle="--", label="chosen threshold")
+    plt.title(f"{title_prefix} Metrics vs Threshold".strip())
+    plt.xlabel("Threshold")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
-    axes[5].plot(prob_pred, prob_true, marker="o", label="model")
-    axes[5].plot([0, 1], [0, 1], linestyle="--", color="gray", label="perfect")
-    axes[5].set_title(f"{title_prefix} Calibration Curve".strip())
-    axes[5].set_xlabel("Mean predicted probability")
-    axes[5].set_ylabel("Observed positive rate")
-    axes[5].legend()
-
+    plt.figure(figsize=(6, 5))
+    plt.plot(prob_pred, prob_true, marker="o", label="model")
+    plt.plot([0, 1], [0, 1], linestyle="--", color="gray", label="perfect")
+    plt.title(f"{title_prefix} Calibration Curve".strip())
+    plt.xlabel("Mean predicted probability")
+    plt.ylabel("Observed positive rate")
+    plt.legend()
     plt.tight_layout()
     plt.show()
 
@@ -425,39 +434,30 @@ def plot_mlp_learning_curve(model: Pipeline) -> None:
         print("This model does not expose a loss curve.")
         return
 
-    fig, axes = plt.subplots(1, 2, figsize=(12, 4))
-    axes[0].plot(estimator.loss_curve_)
-    axes[0].set_title("MLP Loss Curve")
-    axes[0].set_xlabel("Iteration")
-    axes[0].set_ylabel("Loss")
-
-    if hasattr(estimator, "validation_scores_") and estimator.validation_scores_ is not None:
-        axes[1].plot(estimator.validation_scores_)
-        axes[1].set_title("MLP Validation Score")
-        axes[1].set_xlabel("Iteration")
-        axes[1].set_ylabel("Validation Score")
-    else:
-        axes[1].axis("off")
-
+    plt.figure(figsize=(7, 4))
+    plt.plot(estimator.loss_curve_)
+    plt.title("MLP Loss Curve")
+    plt.xlabel("Iteration")
+    plt.ylabel("Loss")
     plt.tight_layout()
     plt.show()
+
+    if hasattr(estimator, "validation_scores_") and estimator.validation_scores_ is not None:
+        plt.figure(figsize=(7, 4))
+        plt.plot(estimator.validation_scores_)
+        plt.title("MLP Validation Score")
+        plt.xlabel("Iteration")
+        plt.ylabel("Validation Score")
+        plt.tight_layout()
+        plt.show()
 
 
 def plot_comparison_bars(results_df: pd.DataFrame, metrics: list[str] | None = None) -> None:
     metrics = metrics or ["PR-AUC", "Recall", "Precision", "F1", "Balanced-Accuracy", "MCC"]
-    num_metrics = len(metrics)
-    ncols = 2
-    nrows = math.ceil(num_metrics / ncols)
-    fig, axes = plt.subplots(nrows, ncols, figsize=(14, 4 * nrows))
-    axes = np.array(axes).reshape(-1)
-
-    for ax, metric in zip(axes, metrics):
-        sns.barplot(data=results_df, x="model", y=metric, ax=ax)
+    for metric in metrics:
+        plt.figure(figsize=(7, 4))
+        ax = sns.barplot(data=results_df, x="model", y=metric)
         ax.set_title(metric)
         ax.tick_params(axis="x", rotation=20)
-
-    for ax in axes[num_metrics:]:
-        ax.axis("off")
-
-    plt.tight_layout()
-    plt.show()
+        plt.tight_layout()
+        plt.show()

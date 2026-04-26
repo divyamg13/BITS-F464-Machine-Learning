@@ -78,9 +78,9 @@ def set_seed(seed: int = 42) -> None:
 
 
 def load_and_split(nodes_csv: Path, random_state: int = 42):
-    """Load nodes CSV, extract eth_twitter_combined_features, split 70/15/15."""
+    """Load nodes CSV, extract features, split 70/15/15."""
     df = pd.read_csv(nodes_csv)
-    feature_cols = [c for c in df.columns if c.startswith("eth_twitter_combined_features_")]
+    feature_cols = [c for c in df.columns if c.startswith("features_")]
     X = df[feature_cols].values.astype(float)
     y = df["label"].values.astype(int)
 

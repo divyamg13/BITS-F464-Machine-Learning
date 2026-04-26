@@ -64,6 +64,7 @@ cells = [
 
         from hybrid_models.hybrid_model_utils import (
             plot_evaluation_dashboard,
+            plot_hybrid_comparison_bars,
             plot_meta_coefficients,
             plot_signal_correlation,
             run_hybrid_experiment,
@@ -73,7 +74,7 @@ cells = [
     ),
     code(
         """
-        FEATURE_GROUP = "eth_twitter_combined_features"
+        FEATURE_GROUP = "features"
         ADD_GRAPH_STATS = False
         RANDOM_STATE = 42
         TABULAR_MODEL_NAME = "xgboost"
@@ -107,6 +108,47 @@ cells = [
         )
 
         display(experiment["comparison_df"])
+        plot_hybrid_comparison_bars(experiment["comparison_df"])
+        """
+    ),
+    code(
+        """
+        plot_evaluation_dashboard(
+            y_true=experiment["test_signal_df"]["label"].to_numpy(),
+            y_prob=experiment["test_signal_df"]["tabular_score"].to_numpy(),
+            threshold=experiment["tabular_signal"]["threshold"],
+            title_prefix="Hybrid Tabular Signal",
+        )
+        """
+    ),
+    code(
+        """
+        plot_evaluation_dashboard(
+            y_true=experiment["test_signal_df"]["label"].to_numpy(),
+            y_prob=experiment["test_signal_df"]["motif_score"].to_numpy(),
+            threshold=experiment["motif_signal"]["threshold"],
+            title_prefix="Hybrid Motif Signal",
+        )
+        """
+    ),
+    code(
+        """
+        plot_evaluation_dashboard(
+            y_true=experiment["test_signal_df"]["label"].to_numpy(),
+            y_prob=experiment["test_signal_df"]["gnn_score"].to_numpy(),
+            threshold=experiment["gnn_signal"]["threshold"],
+            title_prefix="Hybrid GNN Signal",
+        )
+        """
+    ),
+    code(
+        """
+        plot_evaluation_dashboard(
+            y_true=experiment["test_signal_df"]["label"].to_numpy(),
+            y_prob=experiment["test_signal_df"]["anomaly_score"].to_numpy(),
+            threshold=experiment["anomaly_signal"]["threshold"],
+            title_prefix="Hybrid Anomaly Signal",
+        )
         """
     ),
     code(

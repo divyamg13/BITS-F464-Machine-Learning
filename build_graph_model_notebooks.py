@@ -218,7 +218,7 @@ def model_notebook_cells(model_name: str, title: str, hidden_dim: int, dropout: 
         code(
             f"""
             MODEL_NAME = "{model_name}"
-            FEATURE_GROUP = "eth_twitter_combined_features"
+            FEATURE_GROUP = "features"
             ADD_GRAPH_STATS = False
             RANDOM_STATE = 42
             HIDDEN_DIM = {hidden_dim}
@@ -394,7 +394,7 @@ comparison_cells = [
     ),
     code(
         """
-        FEATURE_GROUP = "eth_twitter_combined_features"
+        FEATURE_GROUP = "features"
         ADD_GRAPH_STATS = False
         RANDOM_STATE = 42
         THRESHOLD_OBJECTIVE = "f1"

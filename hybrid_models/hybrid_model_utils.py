@@ -377,7 +377,7 @@ def fit_meta_model(
 
 
 def run_hybrid_experiment(
-    feature_group: str = "eth_twitter_combined_features",
+    feature_group: str = "features",
     add_graph_stats: bool = False,
     random_state: int = 42,
     tabular_model_name: str = "xgboost",
@@ -530,6 +530,17 @@ def plot_meta_coefficients(coefficient_df: pd.DataFrame) -> None:
     plt.show()
 
 
+def plot_hybrid_comparison_bars(comparison_df: pd.DataFrame, metrics: list[str] | None = None) -> None:
+    metrics = metrics or ["PR-AUC", "Recall", "Precision", "F1", "Balanced-Accuracy", "MCC"]
+    for metric in metrics:
+        plt.figure(figsize=(7, 4))
+        ax = sns.barplot(data=comparison_df, x="signal", y=metric)
+        ax.set_title(metric)
+        ax.tick_params(axis="x", rotation=20)
+        plt.tight_layout()
+        plt.show()
+
+
 def top_hybrid_alerts(test_signal_df: pd.DataFrame, top_n: int = 25) -> pd.DataFrame:
     columns = [
         "node_id",
@@ -546,6 +557,7 @@ def top_hybrid_alerts(test_signal_df: pd.DataFrame, top_n: int = 25) -> pd.DataF
 
 __all__ = [
     "compute_motif_features",
+    "plot_hybrid_comparison_bars",
     "plot_evaluation_dashboard",
     "plot_meta_coefficients",
     "plot_signal_correlation",

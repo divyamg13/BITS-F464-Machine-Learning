@@ -271,7 +271,7 @@ def main(run_autoencoder: bool = True, ae_epochs: int = 100, device_str: str = "
     _tmu.NODES_PATH = nodes_path
 
     dataset = build_tabular_dataset(
-        feature_group="eth_twitter_combined_features",
+        feature_group="features",
         add_graph_stats=False,
         random_state=RANDOM_STATE,
     )
