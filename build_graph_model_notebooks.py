@@ -22,11 +22,11 @@ def write_notebook(path: Path, cells):
     nb["cells"] = cells
     nb["metadata"] = {
         "kernelspec": {
-            "display_name": "Python 3",
+            "display_name": ".venv311",
             "language": "python",
             "name": "python3",
         },
-        "language_info": {"name": "python", "version": "3.11"},
+        "language_info": {"name": "python", "version": "3.11.14"},
     }
     with path.open("w", encoding="utf-8") as f:
         nbf.write(nb, f)
@@ -60,7 +60,9 @@ overview_cells = [
         import pandas as pd
         import seaborn as sns
 
-        sys.path.append(str(Path.cwd()))
+        module_dir_candidates = [Path.cwd(), Path.cwd() / "graph_models", Path.cwd().parent / "graph_models"]
+        module_dir = next(path for path in module_dir_candidates if (path / "graph_model_utils.py").exists())
+        sys.path.append(str(module_dir))
 
         from graph_model_utils import GRAPH_STAT_COLS, get_feature_groups, load_frames
 
@@ -183,8 +185,8 @@ def model_notebook_cells(model_name: str, title: str, hidden_dim: int, dropout: 
             - stratified train/val/test split
             - train-time early stopping
             - threshold tuning on validation set
-            - rich test metrics
-            - loss curves, ROC curve, PR curve, confusion matrix, score histogram, calibration curve
+            - compact train/test metric summary
+            - test confusion matrix with TP/FP/TN/FN counts
 
             Default restriction:
 
@@ -199,16 +201,14 @@ def model_notebook_cells(model_name: str, title: str, hidden_dim: int, dropout: 
 
             import pandas as pd
 
-            sys.path.append(str(Path.cwd()))
+            module_dir_candidates = [Path.cwd(), Path.cwd() / "graph_models", Path.cwd().parent / "graph_models"]
+            module_dir = next(path for path in module_dir_candidates if (path / "graph_model_utils.py").exists())
+            sys.path.append(str(module_dir))
 
             from graph_model_utils import (
                 build_graph_dataset,
-                classification_report_df,
-                evaluate_probabilities,
                 find_best_threshold,
                 get_model,
-                plot_evaluation_dashboard,
-                plot_training_history,
                 predict_probabilities,
                 set_seed,
                 train_model,
@@ -271,36 +271,83 @@ def model_notebook_cells(model_name: str, title: str, hidden_dim: int, dropout: 
                 threshold_objective=THRESHOLD_OBJECTIVE,
             )
 
-            display(history_df.tail())
-            plot_training_history(history_df)
+            print("Training completed!")
             """
         ),
         code(
             """
+            from sklearn.metrics import f1_score, precision_score, recall_score, roc_auc_score
+            import matplotlib.pyplot as plt
+            import numpy as np
+            import seaborn as sns
+
+            train_true, train_prob = predict_probabilities(best_model, data, "train_mask")
             val_true, val_prob = predict_probabilities(best_model, data, "val_mask")
+            test_true, test_prob = predict_probabilities(best_model, data, "test_mask")
+
             best_threshold = find_best_threshold(val_true, val_prob, objective=THRESHOLD_OBJECTIVE)
 
-            test_true, test_prob = predict_probabilities(best_model, data, "test_mask")
-            test_metrics = evaluate_probabilities(test_true, test_prob, best_threshold)
+            train_pred = (train_prob >= best_threshold).astype(int)
+            train_metrics = {
+                "ROC-AUC": roc_auc_score(train_true, train_prob),
+                "F1": f1_score(train_true, train_pred),
+                "Precision": precision_score(train_true, train_pred),
+                "Recall": recall_score(train_true, train_pred),
+            }
 
-            metrics_df = pd.DataFrame([test_metrics]).T.rename(columns={0: "value"})
-            display(metrics_df)
+            test_pred = (test_prob >= best_threshold).astype(int)
+            test_metrics = {
+                "ROC-AUC": roc_auc_score(test_true, test_prob),
+                "F1": f1_score(test_true, test_pred),
+                "Precision": precision_score(test_true, test_pred),
+                "Recall": recall_score(test_true, test_pred),
+            }
+
+            print("=" * 50)
+            print("TRAIN SET METRICS")
+            print("=" * 50)
+            for metric, value in train_metrics.items():
+                print(f"{metric}: {value:.4f}")
+
+            print("\\n" + "=" * 50)
+            print("TEST SET METRICS (Threshold: {:.4f})".format(best_threshold))
+            print("=" * 50)
+            for metric, value in test_metrics.items():
+                print(f"{metric}: {value:.4f}")
             """
         ),
         code(
             """
-            report_df = classification_report_df(test_true, test_prob, best_threshold)
-            display(report_df)
-            """
-        ),
-        code(
-            """
-            plot_evaluation_dashboard(
-                y_true=test_true,
-                y_prob=test_prob,
-                threshold=best_threshold,
-                title_prefix=MODEL_NAME.upper(),
+            from sklearn.metrics import confusion_matrix
+
+            sns.set_theme(style="whitegrid")
+            cm = confusion_matrix(test_true, test_pred, labels=[0, 1])
+            tn, fp, fn, tp = cm.ravel()
+
+            plt.figure(figsize=(6, 5))
+            sns.heatmap(
+                cm,
+                annot=True,
+                fmt="d",
+                cmap="Blues",
+                cbar=False,
+                xticklabels=["Pred 0", "Pred 1"],
+                yticklabels=["True 0", "True 1"],
             )
+            plt.title(f"{MODEL_NAME.upper()} Test Set Confusion Matrix @ {best_threshold:.4f}")
+            plt.tight_layout()
+            plt.show()
+
+            print("\\nConfusion Matrix Values:")
+            print(f"True Negatives: {tn}")
+            print(f"False Positives: {fp}")
+            print(f"False Negatives: {fn}")
+            print(f"True Positives: {tp}")
+            """
+        ),
+        code(
+            """
+            print("Evaluation complete: Train metrics, Test metrics, and Confusion Matrix shown")
             """
         ),
         code(
@@ -377,7 +424,9 @@ comparison_cells = [
 
         import pandas as pd
 
-        sys.path.append(str(Path.cwd()))
+        module_dir_candidates = [Path.cwd(), Path.cwd() / "graph_models", Path.cwd().parent / "graph_models"]
+        module_dir = next(path for path in module_dir_candidates if (path / "graph_model_utils.py").exists())
+        sys.path.append(str(module_dir))
 
         from graph_model_utils import (
             build_graph_dataset,

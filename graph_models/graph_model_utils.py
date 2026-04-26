@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import copy
 import random
+import sys
 from pathlib import Path
 from typing import Dict
 
-import dgl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -13,7 +13,6 @@ import seaborn as sns
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from dgl.nn import GATConv, GatedGraphConv, GraphConv, SAGEConv
 import networkx as nx
 from sklearn.calibration import calibration_curve
 from sklearn.metrics import (
@@ -35,6 +34,15 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import train_test_split
 
+try:
+    import dgl
+    from dgl.nn import GATConv, GatedGraphConv, GraphConv, SAGEConv
+    _DGL_IMPORT_ERROR = None
+except ModuleNotFoundError as exc:
+    dgl = None
+    GATConv = GatedGraphConv = GraphConv = SAGEConv = None
+    _DGL_IMPORT_ERROR = exc
+
 
 ROOT = Path(__file__).resolve().parent.parent
 NODES_PATH = ROOT / "wash_trading_gnn_nodes_10000.csv"
@@ -50,6 +58,19 @@ GRAPH_STAT_COLS = [
     "sub_out_degree",
     "sub_total_degree",
 ]
+
+
+def _require_dgl() -> None:
+    if _DGL_IMPORT_ERROR is None:
+        return
+
+    project_python = ROOT / ".venv311" / "Scripts" / "python.exe"
+    raise ModuleNotFoundError(
+        "DGL is required for the graph notebooks, but it is not available in the active Python kernel.\n"
+        f"Current interpreter: {sys.executable}\n"
+        f"Project interpreter with DGL: {project_python}\n"
+        "Switch the notebook kernel to 'Python (.venv311 mlproj)' or use the project interpreter directly."
+    ) from _DGL_IMPORT_ERROR
 
 
 def set_seed(seed: int = 42) -> None:
@@ -89,6 +110,7 @@ def build_graph_dataset(
     random_state: int = 42,
     device: str | torch.device | None = None,
 ) -> dict:
+    _require_dgl()
     nodes_df, edges_df = load_frames()
     feature_groups = get_feature_groups(nodes_df)
     if feature_group not in feature_groups:
@@ -186,6 +208,7 @@ def build_graph_dataset(
 class GCNModel(nn.Module):
     def __init__(self, in_dim: int, hidden_dim: int, out_dim: int, dropout: float = 0.2):
         super().__init__()
+        _require_dgl()
         self.conv1 = GraphConv(in_dim, hidden_dim, allow_zero_in_degree=True)
         self.conv2 = GraphConv(hidden_dim, hidden_dim, allow_zero_in_degree=True)
         self.dropout = nn.Dropout(dropout)
@@ -204,6 +227,7 @@ class GCNModel(nn.Module):
 class GraphSAGEModel(nn.Module):
     def __init__(self, in_dim: int, hidden_dim: int, out_dim: int, dropout: float = 0.2):
         super().__init__()
+        _require_dgl()
         self.conv1 = SAGEConv(in_dim, hidden_dim, aggregator_type="mean")
         self.conv2 = SAGEConv(hidden_dim, hidden_dim, aggregator_type="mean")
         self.dropout = nn.Dropout(dropout)
@@ -222,6 +246,7 @@ class GraphSAGEModel(nn.Module):
 class GATModel(nn.Module):
     def __init__(self, in_dim: int, hidden_dim: int, out_dim: int, dropout: float = 0.2, num_heads: int = 4):
         super().__init__()
+        _require_dgl()
         self.gat1 = GATConv(in_dim, hidden_dim, num_heads=num_heads, feat_drop=dropout, attn_drop=dropout)
         self.gat2 = GATConv(
             hidden_dim * num_heads,
@@ -246,6 +271,7 @@ class GATModel(nn.Module):
 class GGNNModel(nn.Module):
     def __init__(self, in_dim: int, hidden_dim: int, out_dim: int, n_steps: int = 3, dropout: float = 0.2):
         super().__init__()
+        _require_dgl()
         self.input_proj = nn.Linear(in_dim, hidden_dim)
         self.ggnn = GatedGraphConv(hidden_dim, hidden_dim, n_steps=n_steps, n_etypes=1)
         self.dropout = nn.Dropout(dropout)
@@ -269,6 +295,7 @@ def get_model(
     num_heads: int = 4,
     n_steps: int = 3,
 ) -> nn.Module:
+    _require_dgl()
     model_name = model_name.lower()
     if model_name == "gcn":
         return GCNModel(in_dim, hidden_dim, out_dim, dropout)
